@@ -99,9 +99,7 @@ Each row corresponds to **one trip**.
 
 ### 5.2 Target
 
-The target is:
-
-`energy_per_km`
+The target is: `energy_per_km`
 
 Using energy per kilometer is preferable to total trip energy because it normalizes for trip length and focuses the model on *efficiency* rather than scale.
 
@@ -137,12 +135,14 @@ Why XGBoost?
 
 Let
 
-- `y` be the actual trip energy per kilometer,
-- `ŷ` be the model prediction.
+- $y$ be the actual trip energy per kilometer,
+- $ŷ$ be the model prediction.
 
 We define the residual:
 
-`residual = y - ŷ`
+$$
+   residual = y - ŷ
+$$
 
 We are interested only in **positive residuals**, because they correspond to trips that consumed **more energy than expected**.
 
@@ -171,18 +171,24 @@ This is different from generic anomaly detection. We do not detect arbitrary out
 
 ## 7. Mathematical formulation
 
-Let `x_i` denote the trip-level feature vector for trip `i`, and let `f(x_i)` be the XGBoost prediction.
+Let $x_i$ denote the trip-level feature vector for trip $i$, and let $f(x_i)$ be the XGBoost prediction.
 
 ### 7.1 Prediction
-`ŷ_i = f(x_i)`
+$$
+   ŷ_i = f(x_i)
+$$
 
 ### 7.2 Residual
-`r_i = y_i - ŷ_i`
+$$
+   r_i = y_i - ŷ_i
+$$
 
 ### 7.3 Anomaly rule
-`trip i is anomalous if r_i > τ`
+$$
+   \text{trip i is anomalous if } r_i > τ
+$$
 
-where `τ` is a threshold chosen from validation residuals.
+where $τ$ is a threshold chosen from validation residuals.
 
 This makes the pipeline:
 
@@ -240,19 +246,21 @@ This is **not** the optimized TreeSHAP algorithm. It is a transparent implementa
 
 ### 10.2 Shapley value definition
 
-For a feature `j`, the Shapley value is the average marginal contribution of that feature across all coalitions of the remaining features:
+For a feature $j$, the Shapley value is the average marginal contribution of that feature across all coalitions of the remaining features:
 
-`φ_j = Σ_{S ⊆ F \ {j}} [ |S|! (M-|S|-1)! / M! ] · ( v(S ∪ {j}) - v(S) )`
+$$
+   φ_j = Σ_{S ⊆ F \ {j}} [ |S|! (M-|S|-1)! / M! ] · ( v(S ∪ {j}) - v(S) )
+$$
 
 where:
 
-- `F` is the full feature set,
-- `M = |F|`,
-- `v(S)` is the model value when only features in coalition `S` are fixed.
+- $F$ is the full feature set,
+- $M = |F|$,
+- $v(S)$ is the model value when only features in coalition $S$ are fixed.
 
 ### 10.3 Coalition value in our implementation
 
-To define `v(S)` for tabular telematics data, we use **background averaging**:
+To define $v(S)$ for tabular telematics data, we use **background averaging**:
 
 - fix coalition features to their values from the trip being explained,
 - fill the remaining features using background rows from training data,
@@ -261,7 +269,9 @@ To define `v(S)` for tabular telematics data, we use **background averaging**:
 
 So:
 
-`v(S) = E_background [ f(x with features in S fixed to x0) ]`
+$$
+   v(S) = E_{background} [ f(\text{$x$ with features in $S$ fixed to $x0$}) ]
+$$
 
 This makes the explanation interventional and model-based.
 
@@ -338,9 +348,9 @@ LIME explains a single prediction by fitting an interpretable local surrogate mo
 
 ### 12.1 LIME algorithm in our setup
 
-For a selected trip `x0`:
+For a selected trip $x0$:
 
-1. generate perturbed neighbors around `x0`,
+1. generate perturbed neighbors around $x0$,
 2. query the black-box regressor on those neighbors,
 3. weight neighbors by proximity,
 4. fit a weighted ridge regression surrogate,
@@ -358,7 +368,7 @@ LIME is useful for three reasons:
 
 We evaluate LIME with:
 
-- local `R²`,
+- local R²,
 - local RMSE,
 - and stability across random seeds.
 
