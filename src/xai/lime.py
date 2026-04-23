@@ -76,18 +76,18 @@ def _encode_for_distance(X: pd.DataFrame, x0: pd.Series) -> tuple[np.ndarray, np
 
 
 def explain_instance(
-    trip_id: Any,
-    x0: pd.Series,
-    background_df: pd.DataFrame,
-    feature_cols: List[str],
-    black_box_predict: Callable[[pd.DataFrame], np.ndarray],
-    n_samples: int = 5000,
-    kernel_width: Optional[float] = None,
-    distance_metric: str = "euclidean",
-    ridge_alpha: float = 1.0,
-    top_k: int = 10,
-    random_state: int = 42,
-) -> LimeExplanation:
+        trip_id: Any,
+        x0: pd.Series,
+        background_df: pd.DataFrame,
+        feature_cols: List[str],
+        black_box_predict: Callable[[pd.DataFrame], np.ndarray],
+        n_samples: int = 5000,
+        kernel_width: Optional[float] = None,
+        distance_metric: str = "euclidean",
+        ridge_alpha: float = 1.0,
+        top_k: int = 10,
+        random_state: int = 42,
+    ) -> LimeExplanation:
     """
     Generate a LIME explanation for a given instance x0.
 

@@ -67,14 +67,5 @@ Runs the trustworthiness section:
 - `lime_case_summary.csv`
 - `shap_case_summary.csv`
 
-## What to include in the final submission
-- `README.md`
-- `docs/blogpost_draft.md`
-- `docs/results_tables.md`
-- `docs/reproducibility.md`
-- the final notebooks under `notebooks/`
-- exported figures and tables from `outputs_blogpost/`
-- reusable utilities under `src/`
-
 ## Important interpretation note
 This project is a **decision-support tutorial**, not a direct diagnostic tool. A flagged trip means the trip is unexpected under the model, not that the vehicle definitely has a fault.

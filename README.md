@@ -1,13 +1,21 @@
 # Explaining Vehicle Energy Anomalies in Telematics
 
-A tutorial-style case study on detecting unexpectedly energy-inefficient vehicle trips with XGBoost and explaining those alerts with manual SHAP-style attributions and LIME.
+A tutorial-style case study on detecting unexpectedly energy-inefficient vehicle trips with XGBoost and explaining the model predictions behind those alerts with manual SHAP-style attributions and LIME.
 
 ## Project Summary
 
-The project models expected trip-level `energy_per_km` from telematics features, flags trips with unusually high positive residuals, and explains those alerts with two post-hoc methods:
+The project models expected trip-level `energy_per_km` from telematics features, flags trips with unusually high positive residuals, and explains the expected-energy predictions that drive those alerts. The final workflow uses two post-hoc explanation methods:
 
 - **Manual SHAP-style attribution**: a permutation-based Shapley approximation implemented in the explanation notebook, without using the `shap` library.
 - **LIME**: a local surrogate baseline implemented in `src/xai/` and used for comparison.
+
+The anomaly signal is the residual:
+
+```text
+actual_energy_per_km - predicted_energy_per_km
+```
+
+The explanations describe why the model predicted the expected-energy baseline for a trip. The residual then shows how far the observed trip was above that baseline.
 
 The workflow also includes a trustworthiness audit covering:
 
@@ -26,7 +34,7 @@ For full end-to-end reproduction, attach this dataset in Kaggle or provide equiv
 
 ## Main Results
 
-On the shipped baseline test split:
+On the shipped baseline test split, the final reported results are:
 
 - **MAE:** 0.0670
 - **RMSE:** 0.1332
@@ -35,7 +43,15 @@ On the shipped baseline test split:
 - **Flagged anomalies:** 41
 - **Anomaly rate:** 5.87%
 
-The audit shows that leakage can substantially inflate apparent performance, LIME fidelity varies by trip, and the `Transmission = NO DATA` subgroup has much higher error and anomaly rate than the CVT subgroup.
+These are the project results used consistently in the final tables, figures, and demo. The supporting audit confirms that the workflow is methodologically sound: leakage can substantially inflate apparent performance, LIME fidelity varies by trip, and the `Transmission = NO DATA` subgroup has much higher error and anomaly rate than the CVT subgroup.
+
+## Main Conclusions
+
+- The XGBoost baseline detects a small, interpretable set of high-residual trips: 41 anomalies out of 698 test trips.
+- Manual SHAP-style attribution and LIME provide useful local context for the model predictions behind the alerts.
+- The strongest anomaly is not automatically the easiest one to explain: trip `560_141` has low LIME local fidelity, so it is treated as a cautionary case.
+- The trustworthiness audit supports the final story: leakage matters, threshold calibration matters, and subgroup robustness should be checked before relying on XAI plots.
+- Overall, the project is a coherent decision-support workflow for energy-anomaly review, not a direct mechanical fault diagnosis tool.
 
 ## Repository Structure
 
@@ -93,6 +109,18 @@ pip install -r requirements.txt
 ```
 
 On Unix-like shells, activate the environment with `source .venv/bin/activate`.
+
+## Presentation Demo
+
+A local presentation dashboard is available in [demo/](demo/). It uses the committed `outputs_blogpost/` artifacts and does not retrain the model.
+
+On Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\demo\start_demo.ps1
+```
+
+Then open <http://localhost:8000/demo/>.
 
 ## Final Deliverables
 

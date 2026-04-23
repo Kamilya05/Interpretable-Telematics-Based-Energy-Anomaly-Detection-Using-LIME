@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 """
-Generate a table of anomalies using computed residuals and a chosen thresholding
-method. This module encapsulates the logic for filtering the residual table
+This module encapsulates the logic for filtering the residual table
 according to the anomaly configuration and ranking the anomalies.
 """
 
@@ -13,10 +12,11 @@ from src.utils.schema import TripSchema, AnomalyConfig
 
 
 def generate_anomaly_table(
-    residuals_df: pd.DataFrame,
-    schema: TripSchema,
-    cfg: AnomalyConfig,
-) -> tuple[pd.DataFrame, dict]:
+        residuals_df: pd.DataFrame,
+        schema: TripSchema,
+        cfg: AnomalyConfig,
+    ) -> tuple[pd.DataFrame, dict]:
+
     """
     Create a sorted anomaly table based on residual values and configuration.
 

@@ -27,8 +27,10 @@ def quantile_threshold(residuals: pd.Series, q: float) -> float:
         Threshold value such that residual >= threshold corresponds to the
         top‑q fraction of residuals.
     """
+
     if not 0.0 < q < 1.0:
         raise ValueError("q must be between 0 and 1")
+    
     return float(np.nanquantile(residuals.values, q))
 
 
@@ -46,6 +48,7 @@ def mad_threshold(residuals: pd.Series, z: float) -> tuple[float, float, float]:
         for the positive side. 0.6745 converts the MAD to be comparable to the
         standard deviation for a normal distribution.
     """
+
     x = residuals.values.astype(float)
     median = float(np.nanmedian(x))
     mad = float(np.nanmedian(np.abs(x - median))) + 1e-12
@@ -54,12 +57,13 @@ def mad_threshold(residuals: pd.Series, z: float) -> tuple[float, float, float]:
 
 
 def flag_anomalies(
-    residuals: pd.Series,
-    method: str,
-    side: str = "positive",
-    quantile: float = 0.98,
-    mad_z: float = 3.5,
-) -> tuple[pd.Series, dict]:
+        residuals: pd.Series,
+        method: str,
+        side: str = "positive",
+        quantile: float = 0.98,
+        mad_z: float = 3.5,
+    ) -> tuple[pd.Series, dict]:
+
     """
     Determine anomalies based on residuals.
 
@@ -75,8 +79,10 @@ def flag_anomalies(
         A boolean mask indicating which rows are anomalous and a dictionary of
         metadata describing the threshold(s) used.
     """
+
     method = method.lower().strip()
     side = side.lower().strip()
+    
     if side not in {"positive", "both"}:
         raise ValueError("side must be 'positive' or 'both'")
 

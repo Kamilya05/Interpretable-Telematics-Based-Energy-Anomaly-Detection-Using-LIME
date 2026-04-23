@@ -28,7 +28,6 @@ from src.xai.lime import explain_instance
 
 def _resolve_feature_frame(df: pd.DataFrame, artifact, schema: TripSchema) -> tuple[pd.DataFrame, list[str]]:
     """Return the feature frame used for explanation.
-
     Why:
     - full XAI artifact => explain on raw feature columns
     - baseline artifact => explain on already encoded design columns if present
@@ -44,6 +43,7 @@ def _resolve_feature_frame(df: pd.DataFrame, artifact, schema: TripSchema) -> tu
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Explain a single trip using LIME.")
+
     ap.add_argument(
         "--scored_table_path",
         "--residuals_path",
@@ -54,6 +54,7 @@ def main() -> None:
             "produced by final_telematics_lime_project.ipynb because it includes raw features."
         ),
     )
+
     ap.add_argument(
         "--artifact_path",
         "--model_path",
@@ -61,6 +62,7 @@ def main() -> None:
         required=True,
         help="Path to the saved training artifact (.joblib)",
     )
+    
     ap.add_argument("--trip_id", required=True, help="Identifier of the trip to explain")
     ap.add_argument("--out_dir", default="outputs/explanations", help="Directory to save explanation artifacts")
     ap.add_argument("--n_samples", type=int, default=5000, help="Number of perturbation samples")

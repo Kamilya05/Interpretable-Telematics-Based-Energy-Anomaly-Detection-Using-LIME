@@ -58,10 +58,14 @@ def distances(a: np.ndarray, b: np.ndarray, metric: str) -> np.ndarray:
         Array of shape (n_samples,) containing distances.
     """
     metric = metric.lower().strip()
+
     if metric == "euclidean":
         return _euclidean(a, b)
+    
+
     if metric == "cosine":
         return _cosine(a, b)
+    
     raise ValueError("metric must be 'euclidean' or 'cosine'")
 
 
@@ -82,9 +86,12 @@ def kernel_weights(d: np.ndarray, kernel_width: float | None) -> tuple[np.ndarra
         Tuple containing the array of weights and the kernel width used.
     """
     d = d.astype(float)
+
     if kernel_width is None:
         kw = float(np.median(d)) + 1e-12
+
     else:
         kw = float(kernel_width) + 1e-12
+
     w = np.exp(-(d ** 2) / (kw ** 2))
     return w, kw

@@ -36,12 +36,12 @@ def build_feature_spec_from_artifact(artifact: dict) -> RawFeatureSpec:
 
 
 def fill_raw_features(
-    df: pd.DataFrame,
-    spec: RawFeatureSpec,
-    numeric_fill: dict[str, float] | None = None,
-) -> pd.DataFrame:
-    """Fill missing values in raw features using the same logic as training.
+        df: pd.DataFrame,
+        spec: RawFeatureSpec,
+        numeric_fill: dict[str, float] | None = None,
+    ) -> pd.DataFrame:
 
+    """Fill missing values in raw features using the same logic as training.
     Numeric columns are coerced to float and filled with medians.
     Categorical columns are converted to strings and filled with ``NO DATA``.
     """
@@ -63,11 +63,12 @@ def fill_raw_features(
 
 
 def make_design_matrix(
-    df: pd.DataFrame,
-    spec: RawFeatureSpec,
-    design_columns: list[str] | None = None,
-    numeric_fill: dict[str, float] | None = None,
-) -> tuple[pd.DataFrame, dict[str, float], list[str]]:
+        df: pd.DataFrame,
+        spec: RawFeatureSpec,
+        design_columns: list[str] | None = None,
+        numeric_fill: dict[str, float] | None = None,
+    ) -> tuple[pd.DataFrame, dict[str, float], list[str]]:
+    
     """Convert raw trip rows into the model design matrix.
 
     This mirrors the logic used in the final notebook:

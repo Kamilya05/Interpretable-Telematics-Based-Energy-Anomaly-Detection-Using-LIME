@@ -3,7 +3,7 @@
 This folder contains reusable code for the VED coursework project:
 
 - detect anomalous trips using residuals (`actual - predicted`)
-- generate LIME explanations for selected trips
+- generate LIME explanations for the model predictions behind selected trips
 - run trustworthiness checks for calibration, leakage, stability, and subgroups
 - save basic plots for reporting
 
@@ -14,7 +14,7 @@ The baseline notebook has already produced:
 - `regression_model/outputs/residuals.parquet` with `trip_id`, actual energy, predictions, and residuals
 - `regression_model/models/xgb_energy_regressor.joblib` or `regression_model/models/xgb_energy_artifact.joblib`
 
-For LIME explanations, use a feature-rich scored trip table. The compact residuals file is enough for anomaly ranking, but not enough to rebuild model inputs.
+For LIME explanations, use a feature-rich scored trip table. The compact residuals file is enough for anomaly ranking, but not enough to rebuild the model inputs needed to explain a prediction.
 
 ## Folder Structure
 
@@ -63,6 +63,8 @@ python -m src.cli.detect_anomalies \
 ```
 
 ## 2. Explain A Trip With LIME
+
+LIME explains the model's predicted `energy_per_km` for the selected trip. The residual table then shows whether the observed trip was unusually high relative to that prediction.
 
 ```bash
 python -m src.cli.explain_trip \
