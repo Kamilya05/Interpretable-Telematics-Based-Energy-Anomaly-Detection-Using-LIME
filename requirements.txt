@@ -5,3 +5,6 @@ matplotlib
 scikit-learn
 xgboost
 pyarrow
+streamlit
+plotly
+scipy
