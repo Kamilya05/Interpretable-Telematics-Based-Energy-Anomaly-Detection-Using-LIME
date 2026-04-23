@@ -1,4 +1,3 @@
-
 # Explaining Vehicle Energy Anomalies in Telematics with XGBoost, Manual SHAP, and LIME
 
 **A tutorial-style case study on residual anomaly detection, post-hoc explanation, and trustworthiness auditing for trip-level vehicle energy analytics**
@@ -9,7 +8,7 @@
 
 Modern vehicles produce rich telematics streams: speed, acceleration, idling, current and voltage summaries, and vehicle metadata. These signals are useful for understanding energy efficiency, but in practice a raw anomaly score is not enough. If a system flags a trip as suspicious, a driver, analyst, or engineer immediately asks a second question:
 
-**Why did the model flag this trip?**
+> **Why did the model flag this trip?**
 
 This blog post presents a full end-to-end case study for **vehicle energy anomaly detection with explanations**. The central goal is not only to detect trips with unexpectedly high energy consumption, but also to explain those alerts with transparent post-hoc XAI and to audit whether those explanations deserve trust.
 
@@ -47,6 +46,7 @@ There are two reasons this problem is interesting.
 ### 3.1 Practical motivation
 
 A trip with high energy usage may indicate:
+
 - heavy stop-go traffic,
 - unusually aggressive driving,
 - long idle periods,
@@ -79,6 +79,10 @@ If the actual energy consumption is much higher than the model’s expectation, 
 
 This framing is important because it turns anomaly detection into a comparison against a learned notion of “normal”.
 
+### End-to-end pipeline
+
+![Energy anomaly detection and explanation pipeline](outputs_blogpost/figures/pipeline_diagram.png)
+
 ---
 
 ## 5. Dataset and trip-level representation
@@ -88,7 +92,6 @@ We use the **Vehicle Energy Dataset (VED)** and aggregate each trip into a singl
 The notebooks were developed around the Kaggle-hosted dataset:
 
 <https://www.kaggle.com/datasets/galievilyas/ved-dataset/data>
-
 
 ### 5.1 Unit of analysis
 
@@ -119,7 +122,7 @@ These features summarize driving intensity, traffic pattern, vehicle load, and o
 
 ## 6. Black-box model and anomaly score
 
-## 6.1 Predictive model
+### 6.1 Predictive model
 
 The black-box model is an **XGBoost regressor** trained to predict expected trip-level `energy_per_km`.
 
@@ -130,7 +133,7 @@ Why XGBoost?
 - it works well with heterogeneous features,
 - and it integrates naturally into an explanation pipeline.
 
-## 6.2 Residual-based anomaly formulation
+### 6.2 Residual-based anomaly formulation
 
 Let
 
@@ -146,6 +149,23 @@ We are interested only in **positive residuals**, because they correspond to tri
 A trip is anomalous if its positive residual exceeds a chosen threshold.
 
 This is different from generic anomaly detection. We do not detect arbitrary outliers; we detect **unexpected inefficiency under the model**.
+
+### Predictive behavior on the test split
+
+<table>
+<tr>
+<td width="50%">
+
+![Actual vs predicted on the test split](outputs_blogpost/figures/predicted_vs_actual_test.png)
+
+</td>
+<td width="50%">
+
+![Residual distribution on the test split](outputs_blogpost/figures/residual_distribution_test.png)
+
+</td>
+</tr>
+</table>
 
 ---
 
@@ -198,26 +218,27 @@ The anomaly score tells us **what** happened:
 The explanation should tell us **why** the model thinks so.
 
 Without explanation:
+
 - the alert is not actionable,
 - failure modes remain hidden,
 - and the system cannot be meaningfully audited.
 
 In this project we compare two XAI approaches:
 
-1. **Manual SHAP** — the primary explanation method
+1. **Manual SHAP** — the primary explanation method  
 2. **LIME** — a local surrogate baseline
 
 ---
 
 ## 10. Manual SHAP from first principles
 
-## 10.1 Why Manual SHAP?
+### 10.1 Why Manual SHAP?
 
 Instead of relying only on the `shap` library, we implement a **manual Shapley-style explainer**. The goal is pedagogical: to make the core logic of SHAP visible.
 
 This is **not** the optimized TreeSHAP algorithm. It is a transparent implementation of Shapley-based feature attribution.
 
-## 10.2 Shapley value definition
+### 10.2 Shapley value definition
 
 For a feature `j`, the Shapley value is the average marginal contribution of that feature across all coalitions of the remaining features:
 
@@ -229,7 +250,7 @@ where:
 - `M = |F|`,
 - `v(S)` is the model value when only features in coalition `S` are fixed.
 
-## 10.3 Coalition value in our implementation
+### 10.3 Coalition value in our implementation
 
 To define `v(S)` for tabular telematics data, we use **background averaging**:
 
@@ -244,14 +265,14 @@ So:
 
 This makes the explanation interventional and model-based.
 
-## 10.4 Exact vs approximate SHAP
+### 10.4 Exact vs approximate SHAP
 
 Exact Shapley computation is exponential in the number of features, so we use two versions:
 
 - **exact Shapley values** on very small feature subsets,
 - **permutation-based approximate SHAP** for practical local and global explanations.
 
-## 10.5 Permutation SHAP approximation
+### 10.5 Permutation SHAP approximation
 
 In the practical version:
 
@@ -263,11 +284,27 @@ In the practical version:
 
 This approximates the Shapley value efficiently enough for tutorial-scale analysis.
 
+### 10.6 Global Manual SHAP summary
+
+The global summary shows which features matter **across many trips**, before we zoom into local case studies.
+
+![Manual SHAP global summary](outputs_blogpost/xai/shap/shap_summary.png)
+
+Across many trips, the strongest feature groups were:
+
+- transmission indicators,
+- acceleration variance,
+- generalized weight,
+- distance,
+- duration.
+
+This is a good sign: the model appears to rely on interpretable trip-level structure.
+
 ---
 
 ## 11. How we implemented Manual SHAP
 
-The repository contains a `ManualSHAP` class in `06_shap_vs_lime.ipynb` that supports:
+The repository contains a `ManualSHAP` implementation in the explanation notebook and supporting `src/xai` utilities that support:
 
 - `exact_shap_row(...)`
 - `permutation_shap_row(...)`
@@ -293,23 +330,11 @@ To keep the implementation usable:
 - exact coalition values are memoized,
 - permutation updates reuse the current masked matrix instead of rebuilding it from scratch at every step.
 
-### 11.3 What the global SHAP summary showed
-
-Across many trips, the strongest feature groups were:
-
-- transmission indicators,
-- acceleration variance,
-- generalized weight,
-- distance,
-- duration.
-
-This is a good sign: the model appears to rely on interpretable trip-level structure.
-
 ---
 
 ## 12. LIME as a comparison baseline
 
-LIME explains a single prediction by fitting an interpretable local surrogate model. Implemented in `src/xai/`
+LIME explains a single prediction by fitting an interpretable local surrogate model.
 
 ### 12.1 LIME algorithm in our setup
 
@@ -332,6 +357,7 @@ LIME is useful for three reasons:
 ### 12.3 Local fidelity metrics
 
 We evaluate LIME with:
+
 - local `R²`,
 - local RMSE,
 - and stability across random seeds.
@@ -344,7 +370,7 @@ This is crucial, because LIME can produce visually clean explanations even when 
 
 We analyze four anomalous trips in detail.
 
-## 13.1 Trip `536_340` — strong anomaly, strong local fit
+### 13.1 Trip `536_340` — strong anomaly, strong local fit
 
 | Quantity | Value |
 |---|---:|
@@ -364,10 +390,24 @@ We analyze four anomalous trips in detail.
 - `speed_mean: -0.1761`
 - `Generalized_Weight: 0.0194`
 
-Interpretation:
-this trip is clearly anomalous, and both methods agree that it lies far outside the model’s normal operating profile, although they emphasize different factors.
+Interpretation: this trip is clearly anomalous, and both methods agree that it lies far outside the model’s normal operating profile, although they emphasize different factors.
 
-## 13.2 Trip `11_3013` — moderate anomaly, stable explanation
+<table>
+<tr>
+<td width="50%">
+
+![Manual SHAP for trip 536_340](outputs_blogpost/xai/shap/trip_536_340_shap.png)
+
+</td>
+<td width="50%">
+
+![LIME for trip 536_340](outputs_blogpost/xai/lime/trip_536_340_lime.png)
+
+</td>
+</tr>
+</table>
+
+### 13.2 Trip `11_3013` — moderate anomaly, stable explanation
 
 | Quantity | Value |
 |---|---:|
@@ -377,10 +417,24 @@ this trip is clearly anomalous, and both methods agree that it lies far outside 
 | Transmission | CVT |
 | LIME local R² | 0.8172 |
 
-Interpretation:
-a smaller anomaly than the top outliers, but still locally explainable in a relatively stable way.
+Interpretation: a smaller anomaly than the top outliers, but still locally explainable in a relatively stable way.
 
-## 13.3 Trip `443_1365` — moderate anomaly, stable explanation
+<table>
+<tr>
+<td width="50%">
+
+![Manual SHAP for trip 11_3013](outputs_blogpost/xai/shap/trip_11_3013_shap.png)
+
+</td>
+<td width="50%">
+
+![LIME for trip 11_3013](outputs_blogpost/xai/lime/trip_11_3013_lime.png)
+
+</td>
+</tr>
+</table>
+
+### 13.3 Trip `443_1365` — moderate anomaly, stable explanation
 
 | Quantity | Value |
 |---|---:|
@@ -390,10 +444,24 @@ a smaller anomaly than the top outliers, but still locally explainable in a rela
 | Transmission | CVT |
 | LIME local R² | 0.8306 |
 
-Interpretation:
-another moderate anomaly where both explanation methods remain coherent.
+Interpretation: another moderate anomaly where both explanation methods remain coherent.
 
-## 13.4 Trip `560_141` — strongest anomaly, cautionary case
+<table>
+<tr>
+<td width="50%">
+
+![Manual SHAP for trip 443_1365](outputs_blogpost/xai/shap/trip_443_1365_shap.png)
+
+</td>
+<td width="50%">
+
+![LIME for trip 443_1365](outputs_blogpost/xai/lime/trip_443_1365_lime.png)
+
+</td>
+</tr>
+</table>
+
+### 13.4 Trip `560_141` — strongest anomaly, cautionary case
 
 | Quantity | Value |
 |---|---:|
@@ -403,8 +471,30 @@ another moderate anomaly where both explanation methods remain coherent.
 | Transmission | CVT |
 | LIME local R² | 0.1011 |
 
-Interpretation:
-this is the strongest anomaly in the test split, but LIME’s local fit is very poor. It is the best example of why explanation readability does **not** automatically imply faithfulness.
+Interpretation: this is the strongest anomaly in the test split, but LIME’s local fit is very poor. It is the best example of why explanation readability does **not** automatically imply faithfulness.
+
+<table>
+<tr>
+<td width="50%">
+
+![Manual SHAP for trip 560_141](outputs_blogpost/xai/shap/trip_560_141_shap.png)
+
+</td>
+<td width="50%">
+
+![LIME for trip 560_141](outputs_blogpost/xai/lime/trip_560_141_lime.png)
+
+</td>
+</tr>
+</table>
+
+### 13.5 Direct comparison on the cautionary case
+
+To make the contrast explicit, we also export a side-by-side comparison for the strongest anomaly:
+
+![Manual SHAP vs LIME for trip 560_141](outputs_blogpost/xai/comparisons/shap_vs_lime_560_141.png)
+
+This is the central cautionary example of the whole project: the largest anomaly is **not** automatically the easiest one to explain faithfully with a local linear surrogate.
 
 ---
 
@@ -447,6 +537,8 @@ But this is exactly the point: **high apparent performance can be misleading** w
 
 So the cleaned model is the more trustworthy benchmark even though its metrics are less impressive.
 
+![Leakage ablation](outputs_blogpost/audit/figures/leakage_ablation.png)
+
 ### 15.2 Validation-only threshold calibration
 
 We calibrated the anomaly threshold on validation residuals.
@@ -457,6 +549,8 @@ We calibrated the anomaly threshold on validation residuals.
 | validation positive q98 | 0.1326 | 0.0688 | 48 |
 
 This shows that anomaly prevalence depends strongly on threshold calibration. That is why threshold selection must be treated as part of the model pipeline, not as an afterthought.
+
+![Validation-only threshold calibration](outputs_blogpost/audit/figures/validation_threshold_calibration.png)
 
 ### 15.3 LIME stability audit
 
@@ -470,9 +564,12 @@ We evaluated LIME across random seeds.
 | 560_141 | 0.7262 | 0.8125 | 0.5265 | 0.0033 |
 
 This tells us that:
+
 - the explanations are not wildly random,
 - but stability is clearly case-dependent,
 - and local fidelity is not uniformly high.
+
+![LIME stability across random seeds](outputs_blogpost/audit/figures/lime_stability.png)
 
 ### 15.4 Subgroup robustness
 
@@ -486,6 +583,8 @@ The strongest subgroup difference appears for `Transmission`.
 This is not a classical demographic fairness result.  
 But it is a very important **operational robustness result**: performance and anomaly frequency change dramatically when metadata quality changes.
 
+![Subgroup robustness by transmission](outputs_blogpost/audit/figures/subgroup_transmission_anomaly_rate.png)
+
 ---
 
 ## 16. Implementation walkthrough
@@ -493,14 +592,18 @@ But it is a very important **operational robustness result**: performance and an
 The final project is organized as three main notebooks.
 
 ### 16.1 `05_blogpost_main_flow.ipynb`
+
 This notebook:
+
 - loads the baseline artifact and scored trip table,
 - defines residual anomalies,
 - exports the main predictive figures,
 - and produces the core performance summary.
 
 ### 16.2 `06_shap_vs_lime.ipynb`
+
 This notebook:
+
 - implements and runs Manual SHAP,
 - builds the global SHAP summary,
 - exports local SHAP plots,
@@ -508,7 +611,9 @@ This notebook:
 - and creates side-by-side comparison figures.
 
 ### 16.3 `07_trustworthiness_audit.ipynb`
+
 This notebook:
+
 - performs the leakage ablation,
 - calibrates validation-only thresholds,
 - runs LIME stability checks,
@@ -523,6 +628,7 @@ The project also includes a Streamlit demo that lets a user inspect flagged trip
 The Streamlit app is not the scientific core of the project, but it is useful as a deployment-style layer.
 
 It allows a user to:
+
 - select a trip,
 - inspect actual vs predicted energy,
 - inspect residual and anomaly status,
@@ -537,15 +643,19 @@ This turns the pipeline into a practical decision-support interface rather than 
 It is important to state clearly what this project **does not** claim.
 
 ### 18.1 Anomaly is not diagnosis
+
 A flagged trip means the trip is unusual **under the model**, not that the vehicle definitely has a fault.
 
 ### 18.2 Post-hoc explanations are model explanations
+
 SHAP and LIME explain the model’s behavior, not causal reality.
 
 ### 18.3 Trip aggregation loses temporal structure
+
 Short-lived events, bursty behavior, and ordering effects are compressed into one row.
 
 ### 18.4 Missing context remains a challenge
+
 Weather, route elevation, detailed traffic information, and sensor reliability are not fully represented.
 
 These are real limitations, and they define the scope of our conclusions.
@@ -608,19 +718,13 @@ Key output locations:
 
 ---
 
-## 22. Final takeaway
-
-If I had to summarize the entire project in one sentence, it would be:
-
-> **Anomaly scores need explanations, and explanations need audits.**
-
-## Repository Structure
+## 22. Repository structure
 
 ```text
 docs/
-  blogpost_draft.md      Final narrative draft
-  results_tables.md      Final metrics and interpretation tables
-  reproducibility.md     Notebook order and output locations
+  blogpost_draft.md
+  results_tables.md
+  reproducibility.md
 
 notebooks/
   05_blogpost_main_flow.ipynb
@@ -628,7 +732,7 @@ notebooks/
   07_trustworthiness_audit.ipynb
   baseline_implementation/
     final-telematics-lime.ipynb
-    output.zip           Compact baseline artifact used by final notebooks
+    output.zip
 
 regression_model/
   ved-energy-regression.ipynb
@@ -636,29 +740,39 @@ regression_model/
   outputs/
 
 src/
-  anomaly/               Residual thresholding and anomaly table generation
-  audit/                 Calibration, leakage, stability, subgroup checks
-  cli/                   Command-line entry points
-  modeling/              Feature design helpers
-  utils/                 I/O, artifact, schema helpers
-  viz/                   Plotting utilities
-  xai/                   LIME perturbation, kernel, surrogate, fidelity code
+  anomaly/
+  audit/
+  cli/
+  modeling/
+  utils/
+  viz/
+  xai/
 
 outputs_blogpost/
-  figures/               Main figures
-  tables/                Summary CSVs
-  audit/                 Audit figures and tables
-  xai/                   Manual SHAP-style, LIME, and comparison outputs
+  figures/
+  tables/
+  audit/
+  xai/
 
 tests/
-  Unit tests for thresholds, LIME surrogate logic, CLI helpers, and audits
+  unit tests for thresholds, surrogate fitting, CLI helpers, and audits
 ```
+
+---
+
+## 23. Final takeaway
+
+If I had to summarize the entire project in one sentence, it would be:
+
+> **Anomaly scores need explanations, and explanations need audits.**
+
+---
 
 ## References
 
-1. Ribeiro, M. T., Singh, S., & Guestrin, C. (2016). "Why Should I Trust You?": Explaining the Predictions of Any Classifier. KDD 2016.
-2. Oh, G. S., LeBlanc, D. J., & Peng, H. (2019). Vehicle Energy Dataset (VED), A Large-scale Dataset for Vehicle Energy Consumption Research. arXiv:1905.02081.
-3. Chen, T., & Guestrin, C. (2016). XGBoost: A Scalable Tree Boosting System. KDD 2016.
+1. Ribeiro, M. T., Singh, S., & Guestrin, C. (2016). *“Why Should I Trust You?”: Explaining the Predictions of Any Classifier.* KDD 2016.  
+2. Oh, G. S., LeBlanc, D. J., & Peng, H. (2019). *Vehicle Energy Dataset (VED), A Large-scale Dataset for Vehicle Energy Consumption Research.* arXiv:1905.02081.  
+3. Chen, T., & Guestrin, C. (2016). *XGBoost: A Scalable Tree Boosting System.* KDD 2016.
 
 ## License
 
