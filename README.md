@@ -112,15 +112,7 @@ On Unix-like shells, activate the environment with `source .venv/bin/activate`.
 
 ## Presentation Demo
 
-A local presentation dashboard is available in [demo/](demo/). It uses the committed `outputs_blogpost/` artifacts and does not retrain the model.
-
-On Windows PowerShell:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\demo\start_demo.ps1
-```
-
-Then open <http://localhost:8000/demo/>.
+A local presentation dashboard is available in [streamlit_app.py](streamlit_app.py).
 
 ## Final Deliverables
 
